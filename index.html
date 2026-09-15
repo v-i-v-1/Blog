@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Foolscap</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script>
+      async function start() {
+        const source = await fetch("./blog.jsx").then((response) => response.text());
+        const runnableSource = source
+          .replace(/^\uFEFF/, "")
+          .replace(/^import React,[^\n]+\n/, "")
+          .replace("export default function Foolscap", "function Foolscap");
+        const transformed = Babel.transform(runnableSource, {
+          presets: [["react", { runtime: "classic" }]],
+          sourceType: "script",
+        }).code;
+        const factory = new Function(
+          "React",
+          "ReactDOM",
+          `const { useState, useEffect, useMemo, useRef, useCallback } = React;\n${transformed}\nreturn Foolscap;`
+        );
+        const Foolscap = factory(React, ReactDOM);
+        ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(Foolscap));
+      }
+
+      start().catch((error) => {
+        document.getElementById("root").textContent = error.stack || error.message;
+        console.error(error);
+      });
+    </script>
+  </body>
+</html>
